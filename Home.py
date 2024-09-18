@@ -31,7 +31,7 @@ st.subheader("Analytics")
 st.write("Dive deep into the real estate market in Gurugram. ")
 st.write('Get detailed insights, trends, and analysis to make informed decisions about buying or investing in properties.')
 
-st.subheader('Recommend Appartments')
+st.subheader('Recommend Appartments') 
 st.write("Let us help you find the perfect flat! Simply provide your preferred location and area, and it will suggest nearby areas that match your criteria.and you can provide the apprartments too.")
 
 
