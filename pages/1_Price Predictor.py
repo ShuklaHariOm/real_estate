@@ -3,59 +3,69 @@ import pickle
 import pandas as pd
 import numpy as np
 
-
-
 st.set_page_config(page_title="Price Predictor")
 
+# Load Data
 with open('df.pkl','rb') as file:
     df = pickle.load(file)
 
-with open('pipeline.pkl','rb') as file1:
+with open('xgboost_pipeline.pkl','rb') as file1:
     pipeline = pickle.load(file1)
 
+# Page Title
+st.title("House Price Predictor in Gurugram")
+st.write("""
+This tool helps you estimate the price of a property in Gurugram based on your inputs. 
+Simply fill out the details below and get an instant prediction.
+""")
 
-st.header('Enter your inputs')
+# --------------------------------------
+# User Inputs (Organized into sections)
+# --------------------------------------
+st.header('Enter Property Details')
 
-# property_type
-property_type = st.selectbox('Property Type',['flat','house'])
+# Collapsible sections for a cleaner UI
+with st.expander("Basic Information", expanded=True):
+    property_type = st.selectbox('Property Type',['flat','house'], help="Choose between a flat or house.")
+    sector = st.selectbox('Sector', sorted(df['sector'].unique().tolist()), help="Select the sector where the property is located.")
+    built_up_area = st.number_input('Built Up Area (in sqft)', min_value=0.0, help="Enter the total built-up area in square feet.")
 
-# sector
-sector = st.selectbox('Sector',sorted(df['sector'].unique().tolist()))
+with st.expander("Rooms & Amenities", expanded=False):
+    bedrooms = st.selectbox('Number of Bedrooms', sorted(df['bedRoom'].unique().tolist()), help="Select the number of bedrooms.")
+    bathroom = st.selectbox('Number of Bathrooms', sorted(df['bathroom'].unique().tolist()), help="Select the number of bathrooms.")
+    balcony = st.selectbox('Balconies', sorted(df['balcony'].unique().tolist()), help="Select the number of balconies.")
+    servant_room = st.selectbox('Servant Room', [0.0, 1.0], help="Indicate if the property has a servant room.")
+    store_room = st.selectbox('Store Room', [0.0, 1.0], help="Indicate if the property has a store room.")
 
-bedrooms = float(st.selectbox('Number of Bedroom',sorted(df['bedRoom'].unique().tolist())))
+with st.expander("Additional Features", expanded=False):
+    property_age = st.selectbox('Property Age', sorted(df['agePossession'].unique().tolist()), help="Specify the age or possession status of the property.")
+    furnishing_type = st.selectbox('Furnishing Type', sorted(df['furnishing_type'].unique().tolist()), help="Is the property furnished, semi-furnished, or unfurnished?")
+    luxury_category = st.selectbox('Luxury Category', sorted(df['luxury_category'].unique().tolist()), help="Select the luxury category of the property.")
+    floor_category = st.selectbox('Floor Category', sorted(df['floor_category'].unique().tolist()), help="Specify whether it's on a low or high floor.")
 
-bathroom = float(st.selectbox('Number of Bathrooms',sorted(df['bathroom'].unique().tolist())))
+# --------------------------------------
+# Prediction Logic
+# --------------------------------------
+if st.button('Predict Price'):
 
-balcony = st.selectbox('Balconies',sorted(df['balcony'].unique().tolist()))
-
-property_age = st.selectbox('Property Age',sorted(df['agePossession'].unique().tolist()))
-
-built_up_area = float(st.number_input('Built Up Area'))
-
-servant_room = float(st.selectbox('Servant Room',[0.0, 1.0]))
-store_room = float(st.selectbox('Store Room',[0.0, 1.0]))
-
-furnishing_type = st.selectbox('Furnishing Type',sorted(df['furnishing_type'].unique().tolist()))
-luxury_category = st.selectbox('Luxury Category',sorted(df['luxury_category'].unique().tolist()))
-floor_category = st.selectbox('Floor Category',sorted(df['floor_category'].unique().tolist()))
-
-if st.button('Predict'):
-
-    # form a dataframe
+    # Collect data in a DataFrame
     data = [[property_type, sector, bedrooms, bathroom, balcony, property_age, built_up_area, servant_room, store_room, furnishing_type, luxury_category, floor_category]]
     columns = ['property_type', 'sector', 'bedRoom', 'bathroom', 'balcony',
                'agePossession', 'built_up_area', 'servant room', 'store room',
                'furnishing_type', 'luxury_category', 'floor_category']
 
-    # Convert to DataFrame
     one_df = pd.DataFrame(data, columns=columns)
 
-    #st.dataframe(one_df)
-
-    # predict
+    # Predict price
     base_price = np.expm1(pipeline.predict(one_df))[0]
     low = base_price - 0.22
     high = base_price + 0.22
 
-    # display
-    st.text("The price of the flat is between {} Cr and {} Cr".format(round(low,2),round(high,2)))
+    # Display the predicted price range
+    st.markdown(f"""
+        ### Predicted Price Range:
+        **₹ {round(low, 2)} Cr to ₹ {round(high, 2)} Cr**
+    """, unsafe_allow_html=True)
+
+# Optional Tips for Better Accuracy
+st.info("Tip: For more accurate results, ensure the built-up area and property age are correctly filled.")
